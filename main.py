@@ -50,45 +50,46 @@ search_pattern = [(-1, -1),
                   (-1, -1)]
 
 searching = True
-cursor_location = start_location
 points = []
+search_multiplier = 1
 points.append(start_location)
+print("starting search")
+print(points)
 while searching:
-    x, y = cursor_location
-    #points.append(cursor_location)
-    was_light = False
-    last_tried = ()
+    x, y = points[-1]
+    output_masked[x - 1 : x + 1 , y - 1 : y + 1] = (0, 255, 0)
+    imshow("Processing", output_masked)
+    if waitKey(1) == ord('q'):
+      searching = False
+
+    no_of_points_at_start = len(points)
+    was_white = False
     #look at adjacent bits
-    for (adj_x, adj_y) in search_pattern:
+    scaled_search_pattern = map(lambda li: (search_multiplier * li[0], search_multiplier * li[1]), search_pattern)
+    for (adj_x, adj_y) in scaled_search_pattern:
         current_try = (x + adj_x, y + adj_y)
         if image[current_try] == 255:
-            was_light = True
-            last_try = current_try
+            was_white = True
 
-        if image[x + adj_x, y + adj_y] == 0 and was_light:
-            cursor_location = current_try
-            points.append(current_try)
-            print(current_try)
+        if image[x + adj_x, y + adj_y] == 0 and was_white:
+            if current_try not in points[:-2]:
+                search_multiplier = 1
+                points.append(current_try)
             break
 
-        if cursor_location == start_location and len(points) > 1:
+        if len(points) > 1 and current_try == points[0]:
             searching = False
 
-        new_im = output_masked.copy()
-        new_im[current_try] = (255, 0, 0)
-        output_masked[cursor_location] = (255, 0, 0)
-        imshow("Processing", new_im)
+    if len(points) == no_of_points_at_start:
+      search_multiplier += 1
 
-        if waitKey(1) == ord('q'):
-            searching = False
-            break
 
 destroyAllWindows()
 
 output_file = filedialog.asksaveasfilename()
-
-with open(output_file, "w") as f:
-    f.write("polygon(points = [")
-    for (x, y) in points:
-        f.write("[" + str(x) + "," + str(y) + "],")
-    f.write("]);")
+if output_file != "":
+    with open(output_file, "w") as f:
+        f.write("polygon(points = [")
+        for (x, y) in points:
+            f.write("[" + str(x) + "," + str(y) + "],")
+        f.write("]);")
